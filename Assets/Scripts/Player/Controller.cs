@@ -19,9 +19,9 @@ public class Controller : MonoBehaviour
     [ConditionalHide("cameraShake", true)]
     [SerializeField] private GameObject camera;
     [ConditionalHide("cameraShake", true)]
-    [SerializeField] private float shakeDuration;
-    [ConditionalHide("cameraShake", true)]
     [SerializeField] private float shakeMagnitude;
+    [ConditionalHide("cameraShake", true)]
+    [SerializeField] private float shakeDuration;
 
     /* SNIFF VARs */
     [SerializeField] private bool allowSniff;
@@ -123,28 +123,25 @@ public class Controller : MonoBehaviour
 
     private IEnumerator DashBoost()
     {
-        Debug.Log("Started Dash at : " + Time.time);
+        //Debug.Log("Started Dash at : " + Time.time);
 
         /* Animation */
         string boolToChange = horizontal != 0 || vertical != 0 ? "isDashing" : "isSniffing";
         animator.SetBool(boolToChange, true);
 
+        /* Action */
         if (boolToChange == "isDashing")
         {
             moveSpeed += dashSpeed;
-
             if (cameraShake)
-                StartCoroutine(camera.GetComponent<CameraShake>().Shake(shakeDuration, shakeMagnitude));
+                CameraShake.Instance.ShakeCamera(shakeMagnitude, shakeDuration);
+            yield return new WaitForSeconds(dashDuration);
         }
         else if (boolToChange == "isSniffing")
         {
             canMove = false; /* disable movement */
-        }
-
-        if (boolToChange == "isDashing")
-            yield return new WaitForSeconds(dashDuration);
-        else
             yield return new WaitForSeconds(sniffDuration);
+        }
 
         if (boolToChange == "isDashing")
             moveSpeed -= dashSpeed; /* disable dash boost */
@@ -154,12 +151,12 @@ public class Controller : MonoBehaviour
         /* Animation */
         animator.SetBool(boolToChange, false);
 
-        Debug.Log("Finished Dash at : " + Time.time);
+        //Debug.Log("Finished Dash at : " + Time.time);
     }
 
     private IEnumerator CreateAllumette()
     {
-        Debug.Log("Started Dash at : " + Time.time);
+        //Debug.Log("Started Dash at : " + Time.time);
 
         /* Create Allumette GameObject */
         allumette = Instantiate(Resources.Load("Allumette") as GameObject, transform.position, Quaternion.identity);
@@ -197,14 +194,12 @@ public class Controller : MonoBehaviour
         }
 
         //yield return new WaitForSeconds(allumetteDuration);
-
-        /* Destroy Allumette */
         Destroy(allumette);
 
         /* Doesn't Has an allumette */
         hasAnAllumette = false;
 
-        Debug.Log("Finished Dash at : " + Time.time);
+        //Debug.Log("Finished Dash at : " + Time.time);
     }
 
     void Flip()
