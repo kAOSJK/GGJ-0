@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering.Universal;
+using UnityEngine.UI;
 
 public class Controller : MonoBehaviour
 {
@@ -30,14 +31,28 @@ public class Controller : MonoBehaviour
     /* ALLUMETTE VARs */
     [SerializeField] private bool allowAllumette;
     [ConditionalHide("allowAllumette", true)]
+    [SerializeField] private int allumetteNumber;
+    [ConditionalHide("allowAllumette", true)]
     [SerializeField] private float allumetteDuration;
     [ConditionalHide("allowAllumette", true)]
     [SerializeField] private float[] allumetteBehaviour;
+    /* ALLUMETTE UI VARs */
+    [SerializeField] private bool allowAllumetteUI;
+    [ConditionalHide("allowAllumetteUI", true)]
+    [SerializeField] private Text allumetteUI;
+    [ConditionalHide("allowAllumetteUI", true)]
+    [SerializeField] private int allumetteUITextSize;
+    [ConditionalHide("allowAllumetteUI", true)]
+    [SerializeField] private Color allumetteUITextColor;
+    [ConditionalHide("allowAllumetteUI", true)]
+    [SerializeField] private bool isAllumetteUITextBold;
 
     /* PRIVATE VARs */
     private Rigidbody2D body; /* rigidbody */
     private Animator animator; /* animator */
     private bool isFacingRight = false; /* direction */
+    private bool canMove = true; /* able movement */
+    private bool hasAnAllumette = false; /* has an allumette */
     private float horizontal; /* horizontal input */
     private float vertical; /* vertical input */
 
@@ -48,6 +63,15 @@ public class Controller : MonoBehaviour
     {
         body = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
+
+        /* UI Allumette */
+        if (allowAllumetteUI)
+        {
+            allumetteUI.text = allumetteNumber.ToString();
+            allumetteUI.fontSize = allumetteUITextSize;
+            allumetteUI.color = allumetteUITextColor;
+            if (isAllumetteUITextBold) allumetteUI.fontStyle = UnityEngine.FontStyle.Bold;
+        }
     }
 
     void Update()
@@ -60,7 +84,7 @@ public class Controller : MonoBehaviour
             StartCoroutine(DashBoost());
         }
 
-        if (allowAllumette && Input.GetKeyDown(KeyCode.E))
+        if (allowAllumette && !hasAnAllumette && allumetteNumber > 0 && Input.GetKeyDown(KeyCode.E))
         {
             StartCoroutine(CreateAllumette());
         }
@@ -75,7 +99,8 @@ public class Controller : MonoBehaviour
             vertical *= moveLimiter;
         }
 
-        body.velocity = new Vector2(horizontal * moveSpeed, vertical * moveSpeed);
+        if (canMove)
+            body.velocity = new Vector2(horizontal * moveSpeed, vertical * moveSpeed);
 
         /* Flip */
         if (horizontal > 0 && !isFacingRight)
@@ -101,7 +126,7 @@ public class Controller : MonoBehaviour
         Debug.Log("Started Dash at : " + Time.time);
 
         /* Animation */
-        string boolToChange = horizontal != 0 ? "isDashing" : "isSniffing";
+        string boolToChange = horizontal != 0 || vertical != 0 ? "isDashing" : "isSniffing";
         animator.SetBool(boolToChange, true);
 
         if (boolToChange == "isDashing")
@@ -111,6 +136,10 @@ public class Controller : MonoBehaviour
             if (cameraShake)
                 StartCoroutine(camera.GetComponent<CameraShake>().Shake(shakeDuration, shakeMagnitude));
         }
+        else if (boolToChange == "isSniffing")
+        {
+            canMove = false; /* disable movement */
+        }
 
         if (boolToChange == "isDashing")
             yield return new WaitForSeconds(dashDuration);
@@ -118,7 +147,9 @@ public class Controller : MonoBehaviour
             yield return new WaitForSeconds(sniffDuration);
 
         if (boolToChange == "isDashing")
-            moveSpeed -= dashSpeed;
+            moveSpeed -= dashSpeed; /* disable dash boost */
+        else if (boolToChange == "isSniffing")
+            canMove = true; /* able movement */
 
         /* Animation */
         animator.SetBool(boolToChange, false);
@@ -130,11 +161,23 @@ public class Controller : MonoBehaviour
     {
         Debug.Log("Started Dash at : " + Time.time);
 
+        /* Create Allumette GameObject */
         allumette = Instantiate(Resources.Load("Allumette") as GameObject, transform.position, Quaternion.identity);
 
         allumette.transform.parent = transform;
         Light2D lightScript = allumette.GetComponent<Light2D>();
 
+        /* Decrement Allumette Counter */
+        allumetteNumber--;
+
+        /* Has an allumette */
+        hasAnAllumette = true;
+
+        /* UI Management */
+        if (allowAllumetteUI)
+            allumetteUI.text = allumetteNumber.ToString();
+
+        /* Light Management */
         float elapsed = 0.0f;
 
         while (elapsed < allumetteDuration)
@@ -155,7 +198,11 @@ public class Controller : MonoBehaviour
 
         //yield return new WaitForSeconds(allumetteDuration);
 
+        /* Destroy Allumette */
         Destroy(allumette);
+
+        /* Doesn't Has an allumette */
+        hasAnAllumette = false;
 
         Debug.Log("Finished Dash at : " + Time.time);
     }
