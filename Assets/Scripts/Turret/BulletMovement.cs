@@ -28,8 +28,6 @@ namespace Bullet
 			else if (bullet.target != null && !bullet.pathfinding)
 				MoveToTarget();
 
-			Debug.Log(Mathf.Round(GetComponent<Pathfinding.AIPath>().desiredVelocity.x) + " / " + Mathf.Round(GetComponent<Pathfinding.AIPath>().steeringTarget.x));
-
 			/* Flip */
 			if (bullet.target != null && bullet.pathfinding)
 			{
@@ -81,8 +79,14 @@ namespace Bullet
 					if (bullet.bulletDestroyBullet)
 						Destroy(gameObject);
 				}
-				else
-					Destroy(gameObject);
+				else if (collision.gameObject.CompareTag("Player"))
+				{
+					/* STATIK */
+					collision.gameObject.GetComponent<Controller>().KillPlayer();
+                    /* END STATIK */
+
+                    Destroy(gameObject);
+				}
 			}
 		}
 

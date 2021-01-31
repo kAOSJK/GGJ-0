@@ -1,13 +1,19 @@
 ﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering.Universal;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class Controller : MonoBehaviour
 {
+    /* LIFE VARs */
+    [HideInInspector] public bool isAlive = true;
+    [SerializeField] private float respawnTime;
+
     /* MOVE VARs */
     [SerializeField] private float moveSpeed;
     [SerializeField] private float moveLimiter; /* diagonal limiter */
+    [SerializeField] private ParticleSystem dust; /* player dust */
 
     /* DASH VARs */
     [SerializeField] private bool allowDash;
@@ -55,14 +61,13 @@ public class Controller : MonoBehaviour
     private bool hasAnAllumette = false; /* has an allumette */
     private float horizontal; /* horizontal input */
     private float vertical; /* vertical input */
+    private Vector3 spawnPosition; /* spawn position */
 
-    /* PRIVATE HOLDING VARs */
-    private GameObject allumette;
-
-    void Start()
+    private void Start()
     {
         body = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
+        spawnPosition = transform.position;
 
         /* UI Allumette */
         if (allowAllumetteUI)
@@ -74,12 +79,12 @@ public class Controller : MonoBehaviour
         }
     }
 
-    void Update()
+    private void Update()
     {
         horizontal = Input.GetAxisRaw("Horizontal"); /* -1 is left, 0 is null, 1 is right */
         vertical = Input.GetAxisRaw("Vertical"); /* -1 is down, 0 is null, 1 is right */
         
-        if (allowDash && Input.GetKeyDown("space"))
+        if (allowDash && !hasAnAllumette && Input.GetKeyDown("space"))
         {
             StartCoroutine(DashBoost());
         }
@@ -123,6 +128,7 @@ public class Controller : MonoBehaviour
 
     private IEnumerator DashBoost()
     {
+        dust.Play();
         //Debug.Log("Started Dash at : " + Time.time);
 
         /* Animation */
@@ -156,6 +162,7 @@ public class Controller : MonoBehaviour
 
     private IEnumerator CreateAllumette()
     {
+        GameObject allumette;
         //Debug.Log("Started Dash at : " + Time.time);
 
         /* Create Allumette GameObject */
@@ -202,12 +209,33 @@ public class Controller : MonoBehaviour
         //Debug.Log("Finished Dash at : " + Time.time);
     }
 
-    void Flip()
+    public void KillPlayer()
     {
+        canMove = false;
+
+        StartCoroutine(WaitTimeAndLoadScene(respawnTime));
+    }
+
+    private IEnumerator WaitTimeAndLoadScene(float waitAccount)
+    {
+        yield return new WaitForSeconds(waitAccount);
+
+        Scene scene = SceneManager.GetActiveScene();
+        SceneManager.LoadScene(scene.name);
+    }
+
+    private void Flip()
+    {
+        dust.Play();
         //Change le boolean qui permet de savoir si il regarde à droite ou non
         isFacingRight = !isFacingRight;
         //Change la direction du joueur
         transform.Rotate(0f, 180f, 0f);
         //Active la trainée de pas
+    }
+
+    private void CreateDust()
+    {
+        dust.Play();
     }
 }
