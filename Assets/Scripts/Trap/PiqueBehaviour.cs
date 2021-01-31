@@ -24,8 +24,6 @@ public class PiqueBehaviour : MonoBehaviour
 		{
 			currentStayTime += Time.deltaTime;
 
-            Debug.Log(currentStayTime);
-
 			if (currentStayTime >= stayTimeToDie)
             {
 				collision.transform.parent.GetComponent<Controller>().KillPlayer();
@@ -44,22 +42,16 @@ public class PiqueBehaviour : MonoBehaviour
 	public void SwitchToCoolMode()
     {
 		animator.SetBool("isInTheAwareZone", false);
-
-        Debug.Log("normally switch to Cool");
 	}
 
 	public void SwitchToAwareMode()
 	{
 		animator.SetBool("isInTheAwareZone", true);
 		animator.SetBool("isInTheAttackZone", false);
-
-		Debug.Log("normally switch to Aware");
 	}
 
 	public void SwitchToAttackMode()
 	{
 		animator.SetBool("isInTheAttackZone", true);
-
-		Debug.Log("normally switch to Attack");
 	}
 }

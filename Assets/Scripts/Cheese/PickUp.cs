@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PickUp : MonoBehaviour
 {
@@ -8,7 +9,23 @@ public class PickUp : MonoBehaviour
 	{
 		if (collision.gameObject.CompareTag("Player"))
 		{
-            Destroy(gameObject);
-        }
+			GetComponent<SpriteRenderer>().sprite = null;
+
+			StartCoroutine(WaitAndGoToScenes());
+		}
+	}
+
+	private IEnumerator WaitAndGoToScenes()
+	{
+		Debug.Log("new scene now");
+
+		yield return new WaitForSeconds(3f);
+
+
+        Debug.Log("new scene now");
+
+		SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+
+		Destroy(gameObject);
 	}
 }

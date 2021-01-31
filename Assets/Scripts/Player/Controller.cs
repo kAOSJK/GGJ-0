@@ -6,239 +6,323 @@ using UnityEngine.UI;
 
 public class Controller : MonoBehaviour
 {
-    /* LIFE VARs */
-    [HideInInspector] public bool isAlive = true;
-    [SerializeField] private float respawnTime;
+	/* LIGHT VARs */
+	[SerializeField] private Light2D globalLightScript;
 
-    /* MOVE VARs */
-    [SerializeField] private float moveSpeed;
-    [SerializeField] private float moveLimiter; /* diagonal limiter */
-    [SerializeField] private ParticleSystem dust; /* player dust */
+	/* LIFE VARs */
+	[HideInInspector] public bool isAlive = true;
+	[SerializeField] private float respawnTime;
 
-    /* DASH VARs */
-    [SerializeField] private bool allowDash;
-    [ConditionalHide("allowDash", true)]
-    [SerializeField] private float dashSpeed;
-    [ConditionalHide("allowDash", true)]
-    [SerializeField] private float dashDuration;
-    [SerializeField] private bool cameraShake;
-    [ConditionalHide("cameraShake", true)]
-    [SerializeField] private GameObject camera;
-    [ConditionalHide("cameraShake", true)]
-    [SerializeField] private float shakeMagnitude;
-    [ConditionalHide("cameraShake", true)]
-    [SerializeField] private float shakeDuration;
+	/* MOVE VARs */
+	[SerializeField] private float moveSpeed;
+	[SerializeField] private float moveLimiter; /* diagonal limiter */
+	[SerializeField] private ParticleSystem dust; /* player dust */
 
-    /* SNIFF VARs */
-    [SerializeField] private bool allowSniff;
-    [ConditionalHide("allowSniff", true)]
-    [SerializeField] private float sniffDuration;
+	/* DASH VARs */
+	[SerializeField] private bool allowDash;
+	[ConditionalHide("allowDash", true)]
+	[SerializeField] private float dashSpeed;
+	[ConditionalHide("allowDash", true)]
+	[SerializeField] private float dashDuration;
+	[SerializeField] private bool cameraShake;
+	[ConditionalHide("cameraShake", true)]
+	[SerializeField] private float shakeMagnitude;
+	[ConditionalHide("cameraShake", true)]
+	[SerializeField] private float shakeDuration;
+	[ConditionalHide("cameraShake", true)]
+	[SerializeField] private float dashReload;
 
-    /* ALLUMETTE VARs */
-    [SerializeField] private bool allowAllumette;
-    [ConditionalHide("allowAllumette", true)]
-    [SerializeField] private int allumetteNumber;
-    [ConditionalHide("allowAllumette", true)]
-    [SerializeField] private float allumetteDuration;
-    [ConditionalHide("allowAllumette", true)]
-    [SerializeField] private float[] allumetteBehaviour;
-    /* ALLUMETTE UI VARs */
-    [SerializeField] private bool allowAllumetteUI;
-    [ConditionalHide("allowAllumetteUI", true)]
-    [SerializeField] private Text allumetteUI;
-    [ConditionalHide("allowAllumetteUI", true)]
-    [SerializeField] private int allumetteUITextSize;
-    [ConditionalHide("allowAllumetteUI", true)]
-    [SerializeField] private Color allumetteUITextColor;
-    [ConditionalHide("allowAllumetteUI", true)]
-    [SerializeField] private bool isAllumetteUITextBold;
+	/* COLLISION VARs */
+	[SerializeField] private float collisionDuration;
 
-    /* PRIVATE VARs */
-    private Rigidbody2D body; /* rigidbody */
-    private Animator animator; /* animator */
-    private bool isFacingRight = false; /* direction */
-    private bool canMove = true; /* able movement */
-    private bool hasAnAllumette = false; /* has an allumette */
-    private float horizontal; /* horizontal input */
-    private float vertical; /* vertical input */
-    private Vector3 spawnPosition; /* spawn position */
+	/* SNIFF VARs */
+	[SerializeField] private bool allowSniff;
+	[ConditionalHide("allowSniff", true)]
+	[SerializeField] private float sniffDuration;
+	[SerializeField] private float sniffLightDuration;
+	[SerializeField] private float sniffLightBoost;
 
-    private void Start()
-    {
-        body = GetComponent<Rigidbody2D>();
-        animator = GetComponent<Animator>();
-        spawnPosition = transform.position;
+	/* ALLUMETTE VARs */
+	[SerializeField] private bool allowAllumette;
+	[ConditionalHide("allowAllumette", true)]
+	[SerializeField] private int allumetteNumber;
+	[ConditionalHide("allowAllumette", true)]
+	[SerializeField] private float allumetteDuration;
+	[ConditionalHide("allowAllumette", true)]
+	[SerializeField] private float[] allumetteBehaviour;
+	/* ALLUMETTE UI VARs */
+	[SerializeField] private bool allowAllumetteUI;
+	[ConditionalHide("allowAllumetteUI", true)]
+	[SerializeField] private Text allumetteUI;
+	[ConditionalHide("allowAllumetteUI", true)]
+	[SerializeField] private int allumetteUITextSize;
+	[ConditionalHide("allowAllumetteUI", true)]
+	[SerializeField] private Color allumetteUITextColor;
+	[ConditionalHide("allowAllumetteUI", true)]
+	[SerializeField] private bool isAllumetteUITextBold;
 
-        /* UI Allumette */
-        if (allowAllumetteUI)
+	/* PRIVATE VARs */
+	private Rigidbody2D body; /* rigidbody */
+	private Animator animator; /* animator */
+	private bool isFacingRight = false; /* direction */
+	private bool canMove = true; /* able movement */
+	private bool canRotate = true; /* able movement */
+	private bool canDash = true; /* able dash */
+	private bool alreadySniffed = false;
+	private bool hasAnAllumette = false; /* has an allumette */
+	private float horizontal; /* horizontal input */
+	private float vertical; /* vertical input */
+	private Vector3 spawnPosition; /* spawn position */
+	private GameObject allumette; /* allumet gameobject */
+
+	private void Start()
+	{
+		body = GetComponent<Rigidbody2D>();
+		animator = GetComponent<Animator>();
+		spawnPosition = transform.position;
+
+		/* UI Allumette */
+		if (allowAllumetteUI)
+		{
+			allumetteUI.text = allumetteNumber.ToString();
+			allumetteUI.fontSize = allumetteUITextSize;
+			allumetteUI.color = allumetteUITextColor;
+			if (isAllumetteUITextBold) allumetteUI.fontStyle = UnityEngine.FontStyle.Bold;
+		}
+	}
+
+	private void Update()
+	{
+		horizontal = Input.GetAxisRaw("Horizontal"); /* -1 is left, 0 is null, 1 is right */
+		vertical = Input.GetAxisRaw("Vertical"); /* -1 is down, 0 is null, 1 is right */
+		
+		if (allowDash && !hasAnAllumette && canDash && Input.GetKeyDown("space"))
+		{
+			StartCoroutine(DashBoost());
+		}
+
+		if (allowAllumette && !hasAnAllumette && allumetteNumber > 0 && Input.GetKeyDown(KeyCode.E))
+		{
+			StartCoroutine(CreateAllumette());
+		}
+	}
+
+	private void FixedUpdate()
+	{
+		if (horizontal != 0 && vertical != 0) /* check for diagonal movement */
+		{
+			/* limit movement speed diagonally */
+			horizontal *= moveLimiter;
+			vertical *= moveLimiter;
+		}
+
+		if (canMove)
+			body.velocity = new Vector2(horizontal * moveSpeed, vertical * moveSpeed);
+
+		/* Flip */
+		if (horizontal > 0 && !isFacingRight)
+		{
+			//Si le mouvement est d'aller à droite et que le joueur regarde à gauche
+			Flip();
+		}
+
+		if (horizontal < 0 && isFacingRight)
+		{
+			//Si le mouvement est d'aller à gauche et que le joueur regarde à droite
+			Flip();
+		}
+
+		/* Animation */
+		float playerSpeed = body.velocity.x > 0 ? body.velocity.x : body.velocity.x * -1; /* X SPEED */
+		playerSpeed += body.velocity.y > 0 ? body.velocity.y : body.velocity.y * -1; /* Y SPEED */
+		animator.SetFloat("Speed", playerSpeed);
+	}
+
+	private IEnumerator DashBoost()
+	{
+		dust.Play();
+		//Debug.Log("Started Dash at : " + Time.time);
+
+		/* Animation */
+		string boolToChange = horizontal != 0 || vertical != 0 ? "isDashing" : "isSniffing";
+		animator.SetBool(boolToChange, true);
+
+		/* Action */
+		if (boolToChange == "isDashing")
+		{
+			moveSpeed += dashSpeed;
+			if (cameraShake)
+				CameraShake.Instance.ShakeCamera(shakeMagnitude, shakeDuration);
+			yield return new WaitForSeconds(dashDuration);
+		}
+		else if (boolToChange == "isSniffing")
+		{
+			canMove = false; /* disable movement */
+			yield return new WaitForSeconds(sniffDuration);
+		}
+
+		if (boolToChange == "isDashing")
         {
-            allumetteUI.text = allumetteNumber.ToString();
-            allumetteUI.fontSize = allumetteUITextSize;
-            allumetteUI.color = allumetteUITextColor;
-            if (isAllumetteUITextBold) allumetteUI.fontStyle = UnityEngine.FontStyle.Bold;
-        }
-    }
-
-    private void Update()
-    {
-        horizontal = Input.GetAxisRaw("Horizontal"); /* -1 is left, 0 is null, 1 is right */
-        vertical = Input.GetAxisRaw("Vertical"); /* -1 is down, 0 is null, 1 is right */
-        
-        if (allowDash && !hasAnAllumette && Input.GetKeyDown("space"))
+			moveSpeed -= dashSpeed; /* disable dash boost */
+			StartCoroutine(DisableDash());
+		}
+			
+		else if (boolToChange == "isSniffing")
         {
-            StartCoroutine(DashBoost());
-        }
+			StartCoroutine(SniffLight());
+			canMove = true; /* able movement */
+		}
+			
 
-        if (allowAllumette && !hasAnAllumette && allumetteNumber > 0 && Input.GetKeyDown(KeyCode.E))
+		/* Animation */
+		animator.SetBool(boolToChange, false);
+
+		//Debug.Log("Finished Dash at : " + Time.time);
+	}
+
+	private IEnumerator CreateAllumette()
+	{
+		//Debug.Log("Started Dash at : " + Time.time);
+
+		/* Create Allumette GameObject */
+		allumette = Instantiate(Resources.Load("Allumette") as GameObject, transform.position, Quaternion.identity);
+
+		allumette.transform.parent = transform;
+		Light2D lightScript = allumette.GetComponent<Light2D>();
+
+		/* Animation */
+		animator.SetBool("hasAllumette", true);
+
+		/* Decrement Allumette Counter */
+		allumetteNumber--;
+
+		/* Has an allumette */
+		hasAnAllumette = true;
+
+		/* UI Management */
+		if (allowAllumetteUI)
+			allumetteUI.text = allumetteNumber.ToString();
+
+		/* Light Management */
+		float elapsed = 0.0f;
+
+		while (elapsed < allumetteDuration)
+		{
+			if (elapsed < allumetteDuration / 4)
+				lightScript.intensity = allumetteBehaviour[0];
+			else if (elapsed <= (allumetteDuration / 4 * 2) && elapsed >= allumetteDuration / 4)
+				lightScript.intensity = allumetteBehaviour[1];
+			else if (elapsed <= (allumetteDuration / 4 * 3) && elapsed >= allumetteDuration / 4)
+				lightScript.intensity = allumetteBehaviour[2];
+			else
+				lightScript.intensity = allumetteBehaviour[3];
+
+			elapsed += Time.deltaTime;
+
+			yield return null;
+		}
+
+		//yield return new WaitForSeconds(allumetteDuration);
+		Destroy(allumette);
+
+		/* Animation */
+		animator.SetBool("hasAllumette", false);
+
+		/* Doesn't Has an allumette */
+		hasAnAllumette = false;
+
+		//Debug.Log("Finished Dash at : " + Time.time);
+	}
+
+	public void KillPlayer()
+	{
+		Destroy(allumette);
+
+		canMove = false;
+		/* Animation */
+		animator.SetBool("isDead", true);
+
+		body.velocity = new Vector3(0, 0, 0);
+
+		StartCoroutine(WaitTimeAndLoadScene(respawnTime));
+	}
+
+	private IEnumerator WaitTimeAndLoadScene(float waitAccount)
+	{
+		yield return new WaitForSeconds(waitAccount);
+
+		Scene scene = SceneManager.GetActiveScene();
+		SceneManager.LoadScene(scene.name);
+	}
+
+	private void Flip()
+	{
+		if (canRotate)
         {
-            StartCoroutine(CreateAllumette());
-        }
-    }
+			dust.Play();
+			//Change le boolean qui permet de savoir si il regarde à droite ou non
+			isFacingRight = !isFacingRight;
+			//Change la direction du joueur
+			transform.Rotate(0f, 180f, 0f);
+			//Active la trainée de pas
+		}
+	}
 
-    private void FixedUpdate()
+	private void CreateDust()
+	{
+		dust.Play();
+	}
+
+    private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (horizontal != 0 && vertical != 0) /* check for diagonal movement */
+		if (collision.gameObject.CompareTag("Border"))
         {
-            /* limit movement speed diagonally */
-            horizontal *= moveLimiter;
-            vertical *= moveLimiter;
-        }
+			PlayerCollid();
+		}
+	}
 
-        if (canMove)
-            body.velocity = new Vector2(horizontal * moveSpeed, vertical * moveSpeed);
+	public void PlayerCollid()
+	{
+		StartCoroutine(WaitAmount());
+	}
 
-        /* Flip */
-        if (horizontal > 0 && !isFacingRight)
+	private IEnumerator WaitAmount()
+	{
+		canRotate = false;
+		canMove = false;
+
+		if (allumette != null) Destroy(allumette);
+
+		animator.SetBool("isCollided", true);
+
+		yield return new WaitForSeconds(collisionDuration);
+
+		animator.SetBool("isCollided", false);
+
+		canMove = true;
+		canRotate = true;
+	}
+
+	private IEnumerator SniffLight()
+	{
+		if (!alreadySniffed)
+			globalLightScript.intensity += sniffLightBoost;
+		
+		yield return new WaitForSeconds(sniffLightDuration);
+
+		if (!alreadySniffed)
         {
-            //Si le mouvement est d'aller à droite et que le joueur regarde à gauche
-            Flip();
-        }
+			globalLightScript.intensity -= sniffLightBoost;
+			alreadySniffed = true;
+		}
+	}
 
-        if (horizontal < 0 && isFacingRight)
-        {
-            //Si le mouvement est d'aller à gauche et que le joueur regarde à droite
-            Flip();
-        }
+	private IEnumerator DisableDash()
+	{
+		canDash = false;
 
-        /* Animation */
-        float playerSpeed = body.velocity.x > 0 ? body.velocity.x : body.velocity.x * -1; /* X SPEED */
-        playerSpeed += body.velocity.y > 0 ? body.velocity.y : body.velocity.y * -1; /* Y SPEED */
-        animator.SetFloat("Speed", playerSpeed);
-    }
+		yield return new WaitForSeconds(dashReload);
 
-    private IEnumerator DashBoost()
-    {
-        dust.Play();
-        //Debug.Log("Started Dash at : " + Time.time);
-
-        /* Animation */
-        string boolToChange = horizontal != 0 || vertical != 0 ? "isDashing" : "isSniffing";
-        animator.SetBool(boolToChange, true);
-
-        /* Action */
-        if (boolToChange == "isDashing")
-        {
-            moveSpeed += dashSpeed;
-            if (cameraShake)
-                CameraShake.Instance.ShakeCamera(shakeMagnitude, shakeDuration);
-            yield return new WaitForSeconds(dashDuration);
-        }
-        else if (boolToChange == "isSniffing")
-        {
-            canMove = false; /* disable movement */
-            yield return new WaitForSeconds(sniffDuration);
-        }
-
-        if (boolToChange == "isDashing")
-            moveSpeed -= dashSpeed; /* disable dash boost */
-        else if (boolToChange == "isSniffing")
-            canMove = true; /* able movement */
-
-        /* Animation */
-        animator.SetBool(boolToChange, false);
-
-        //Debug.Log("Finished Dash at : " + Time.time);
-    }
-
-    private IEnumerator CreateAllumette()
-    {
-        GameObject allumette;
-        //Debug.Log("Started Dash at : " + Time.time);
-
-        /* Create Allumette GameObject */
-        allumette = Instantiate(Resources.Load("Allumette") as GameObject, transform.position, Quaternion.identity);
-
-        allumette.transform.parent = transform;
-        Light2D lightScript = allumette.GetComponent<Light2D>();
-
-        /* Decrement Allumette Counter */
-        allumetteNumber--;
-
-        /* Has an allumette */
-        hasAnAllumette = true;
-
-        /* UI Management */
-        if (allowAllumetteUI)
-            allumetteUI.text = allumetteNumber.ToString();
-
-        /* Light Management */
-        float elapsed = 0.0f;
-
-        while (elapsed < allumetteDuration)
-        {
-            if (elapsed < allumetteDuration / 4)
-                lightScript.intensity = allumetteBehaviour[0];
-            else if (elapsed <= (allumetteDuration / 4 * 2) && elapsed >= allumetteDuration / 4)
-                lightScript.intensity = allumetteBehaviour[1];
-            else if (elapsed <= (allumetteDuration / 4 * 3) && elapsed >= allumetteDuration / 4)
-                lightScript.intensity = allumetteBehaviour[2];
-            else
-                lightScript.intensity = allumetteBehaviour[3];
-
-            elapsed += Time.deltaTime;
-
-            yield return null;
-        }
-
-        //yield return new WaitForSeconds(allumetteDuration);
-        Destroy(allumette);
-
-        /* Doesn't Has an allumette */
-        hasAnAllumette = false;
-
-        //Debug.Log("Finished Dash at : " + Time.time);
-    }
-
-    public void KillPlayer()
-    {
-        canMove = false;
-        GetComponent<SpriteRenderer>().color = Color.red;
-
-        body.velocity = new Vector3(0, 0, 0);
-
-        StartCoroutine(WaitTimeAndLoadScene(respawnTime));
-    }
-
-    private IEnumerator WaitTimeAndLoadScene(float waitAccount)
-    {
-        yield return new WaitForSeconds(waitAccount);
-
-        Scene scene = SceneManager.GetActiveScene();
-        SceneManager.LoadScene(scene.name);
-    }
-
-    private void Flip()
-    {
-        dust.Play();
-        //Change le boolean qui permet de savoir si il regarde à droite ou non
-        isFacingRight = !isFacingRight;
-        //Change la direction du joueur
-        transform.Rotate(0f, 180f, 0f);
-        //Active la trainée de pas
-    }
-
-    private void CreateDust()
-    {
-        dust.Play();
-    }
+		canDash = true;
+	}
 }
