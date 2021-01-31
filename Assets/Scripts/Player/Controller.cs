@@ -212,6 +212,9 @@ public class Controller : MonoBehaviour
     public void KillPlayer()
     {
         canMove = false;
+        GetComponent<SpriteRenderer>().color = Color.red;
+
+        body.velocity = new Vector3(0, 0, 0);
 
         StartCoroutine(WaitTimeAndLoadScene(respawnTime));
     }
